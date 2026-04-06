@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Image Converter — 1500×2250 Lossless WebP</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #f5f5f3;
+      --surface: #ffffff;
+      --surface2: #f1efea;
+      --border: rgba(0,0,0,0.12);
+      --border2: rgba(0,0,0,0.22);
+      --text: #1a1a18;
+      --text2: #5f5e5a;
+      --text3: #9a9890;
+      --blue: #185FA5;
+      --blue-dark: #0C447C;
+      --blue-light: #E6F1FB;
+      --green-bg: #EAF3DE;
+      --green-text: #3B6D11;
+      --amber-bg: #FAEEDA;
+      --amber-text: #854F0B;
+      --red-bg: #FCEBEB;
+      --red-text: #A32D2D;
+      --radius: 8px;
+      --radius-lg: 12px;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #1c1c1a;
+        --surface: #2a2a28;
+        --surface2: #222220;
+        --border: rgba(255,255,255,0.1);
+        --border2: rgba(255,255,255,0.2);
+        --text: #f0ede6;
+        --text2: #a8a69e;
+        --text3: #6a6864;
+        --blue-light: #0c2a45;
+        --green-bg: #1a2e0a;
+        --green-text: #97C459;
+        --amber-bg: #2e1f06;
+        --amber-text: #FAC775;
+        --red-bg: #2e0f0f;
+        --red-text: #F09595;
+      }
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 2rem 1rem 4rem;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 680px;
+    }
+
+    header {
+      margin-bottom: 2rem;
+    }
+
+    header h1 {
+      font-size: 22px;
+      font-weight: 600;
+      letter-spacing: -0.3px;
+      color: var(--text);
+    }
+
+    header p {
+      font-size: 14px;
+      color: var(--text2);
+      margin-top: 4px;
+    }
+
+    #drop-zone {
+      border: 1.5px dashed var(--border2);
+      border-radius: var(--radius-lg);
+      background: var(--surface);
+      padding: 2.5rem 1.5rem;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.15s, background 0.15s;
+      user-select: none;
+    }
+
+    #drop-zone:hover,
+    #drop-zone.drag-over {
+      border-color: var(--blue);
+      background: var(--blue-light);
+    }
+
+    #drop-icon {
+      font-size: 32px;
+      margin-bottom: 10px;
+      display: block;
+    }
+
+    #drop-zone .title {
+      font-size: 15px;
+      font-weight: 500;
+      color: var(--text);
+    }
+
+    #drop-zone .sub {
+      font-size: 13px;
+      color: var(--text2);
+      margin-top: 4px;
+    }
+
+    #file-input { display: none; }
+
+    .info-row {
+      display: flex;
+      gap: 8px;
+      margin-top: 14px;
+      flex-wrap: wrap;
+    }
+
+    .pill {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: var(--text2);
+      background: var(--surface);
+      border-radius: 20px;
+      padding: 4px 12px;
+      border: 0.5px solid var(--border);
+    }
+
+    .dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+    .dot-blue { background: #378ADD; }
+    .dot-green { background: #639922; }
+
+    #progress-wrap {
+      margin-top: 16px;
+      display: none;
+    }
+
+    #progress-bg {
+      height: 4px;
+      background: var(--surface2);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+
+    #progress-bar {
+      height: 100%;
+      width: 0%;
+      background: var(--blue);
+      border-radius: 2px;
+      transition: width 0.2s;
+    }
+
+    #progress-text {
+      font-size: 12px;
+      color: var(--text2);
+      margin-top: 6px;
+    }
+
+    #status-bar {
+      font-size: 13px;
+      color: var(--text2);
+      margin-top: 10px;
+      min-height: 18px;
+    }
+
+    #gallery {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    .thumb-card {
+      background: var(--surface);
+      border: 0.5px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      position: relative;
+    }
+
+    .thumb-img-wrap {
+      width: 100%;
+      aspect-ratio: 2/3;
+      background: var(--surface2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    .thumb-img-wrap img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      cursor: pointer;
+    }
+
+    .thumb-img-wrap .placeholder {
+      font-size: 11px;
+      color: var(--text3);
+    }
+
+    .thumb-label {
+      font-size: 11px;
+      color: var(--text2);
+      padding: 5px 8px 6px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .badge {
+      position: absolute;
+      top: 5px; right: 5px;
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-weight: 500;
+    }
+
+    .badge.done     { background: var(--green-bg); color: var(--green-text); }
+    .badge.working  { background: var(--amber-bg); color: var(--amber-text); }
+    .badge.error    { background: var(--red-bg);   color: var(--red-text);   }
+
+    #actions {
+      display: none;
+      gap: 10px;
+      margin-top: 18px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      padding: 8px 18px;
+      font-size: 13px;
+      font-weight: 500;
+      border-radius: var(--radius);
+      cursor: pointer;
+      border: 0.5px solid var(--border2);
+      background: var(--surface);
+      color: var(--text);
+      transition: background 0.12s;
+    }
+
+    .btn:hover { background: var(--surface2); }
+    .btn:disabled { opacity: 0.4; cursor: default; }
+
+    .btn.primary {
+      background: var(--blue);
+      color: #fff;
+      border-color: var(--blue);
+    }
+
+    .btn.primary:hover { background: var(--blue-dark); }
+
+    #count-label {
+      font-size: 13px;
+      color: var(--text2);
+    }
+
+    footer {
+      margin-top: 3rem;
+      font-size: 12px;
+      color: var(--text3);
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Image Converter</h1>
+      <p>Converts images to 1500×2250 px · Lossless WebP · Smart center crop</p>
+    </header>
+
+    <div id="drop-zone" onclick="document.getElementById('file-input').click()">
+      <span id="drop-icon">🖼️</span>
+      <div class="title">Drop images here or click to upload</div>
+      <div class="sub">JPG, PNG, GIF, BMP, TIFF — any number of files</div>
+      <input type="file" id="file-input" multiple accept="image/*" />
+    </div>
+
+    <div class="info-row">
+      <div class="pill"><div class="dot dot-blue"></div> 1500 × 2250 px output</div>
+      <div class="pill"><div class="dot dot-green"></div> WebP lossless</div>
+      <div class="pill"><div class="dot" style="background:#639922"></div> Smart crop · no borders · no stretch</div>
+    </div>
+
+    <div id="progress-wrap">
+      <div id="progress-bg"><div id="progress-bar"></div></div>
+      <div id="progress-text">Processing…</div>
+    </div>
+
+    <div id="status-bar"></div>
+    <div id="gallery"></div>
+
+    <div id="actions">
+      <button class="btn primary" id="dl-btn">Download all as ZIP</button>
+      <button class="btn" id="clear-btn">Clear</button>
+      <span id="count-label"></span>
+    </div>
+
+    <footer>All processing happens in your browser. No files are uploaded anywhere.</footer>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script>
+    const W = 1500, H = 2250;
+    let results = [];
+
+    const dropZone   = document.getElementById('drop-zone');
+    const fileInput  = document.getElementById('file-input');
+    const gallery    = document.getElementById('gallery');
+    const statusBar  = document.getElementById('status-bar');
+    const actions    = document.getElementById('actions');
+    const dlBtn      = document.getElementById('dl-btn');
+    const clearBtn   = document.getElementById('clear-btn');
+    const countLabel = document.getElementById('count-label');
+    const progWrap   = document.getElementById('progress-wrap');
+    const progBar    = document.getElementById('progress-bar');
+    const progText   = document.getElementById('progress-text');
+
+    dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+    dropZone.addEventListener('drop', e => { e.preventDefault(); dropZone.classList.remove('drag-over'); handleFiles(e.dataTransfer.files); });
+    fileInput.addEventListener('change', () => { handleFiles(fileInput.files); fileInput.value = ''; });
+
+    async function handleFiles(files) {
+      const arr = Array.from(files).filter(f => f.type.startsWith('image/'));
+      if (!arr.length) { statusBar.textContent = 'No valid image files found.'; return; }
+
+      progWrap.style.display = 'block';
+      progBar.style.width = '0%';
+      progText.textContent = `Processing 0 / ${arr.length}`;
+      statusBar.textContent = '';
+      dlBtn.disabled = true;
+
+      for (let i = 0; i < arr.length; i++) {
+        const file = arr[i];
+        const card = createCard(file.name);
+        gallery.appendChild(card.el);
+
+        try {
+          const blob = await convertImage(file);
+          const url = URL.createObjectURL(blob);
+          const baseName = file.name.replace(/\.[^.]+$/, '');
+          results.push({ blob, name: baseName + '.webp' });
+          card.setDone(url, baseName + '.webp', blob.size);
+        } catch (err) {
+          card.setError(err.message);
+        }
+
+        const pct = Math.round(((i + 1) / arr.length) * 100);
+        progBar.style.width = pct + '%';
+        progText.textContent = `Processing ${i + 1} / ${arr.length}`;
+      }
+
+      progText.textContent = `Done — ${results.length} image${results.length !== 1 ? 's' : ''} converted`;
+
+      if (results.length) {
+        actions.style.display = 'flex';
+        countLabel.textContent = `${results.length} file${results.length !== 1 ? 's' : ''} ready`;
+        dlBtn.disabled = false;
+        dlBtn.textContent = results.length === 1 ? 'Download' : 'Download all as ZIP';
+      }
+    }
+
+    function convertImage(file) {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          canvas.width = W; canvas.height = H;
+          const ctx = canvas.getContext('2d');
+
+          const srcRatio = img.width / img.height;
+          const dstRatio = W / H;
+          let sx, sy, sw, sh;
+
+          if (srcRatio > dstRatio) {
+            sh = img.height;
+            sw = Math.round(img.height * dstRatio);
+            sx = Math.round((img.width - sw) / 2);
+            sy = 0;
+          } else {
+            sw = img.width;
+            sh = Math.round(img.width / dstRatio);
+            sx = 0;
+            sy = Math.round((img.height - sh) / 2);
+          }
+
+          ctx.drawImage(img, sx, sy, sw, sh, 0, 0, W, H);
+          canvas.toBlob(blob => {
+            if (blob) resolve(blob);
+            else reject(new Error('Conversion failed'));
+          }, 'image/webp', 1.0);
+          URL.revokeObjectURL(img.src);
+        };
+        img.onerror = () => reject(new Error('Could not load image'));
+        img.src = URL.createObjectURL(file);
+      });
+    }
+
+    function createCard(name) {
+      const el = document.createElement('div');
+      el.className = 'thumb-card';
+      const short = name.length > 18 ? name.slice(0, 15) + '…' : name;
+      el.innerHTML = `
+        <div class="thumb-img-wrap"><span class="placeholder">loading…</span></div>
+        <div class="thumb-label">${short}</div>
+        <span class="badge working">converting</span>
+      `;
+      return {
+        el,
+        setDone(url, outName, size) {
+          const wrap = el.querySelector('.thumb-img-wrap');
+          wrap.innerHTML = '';
+          const img = document.createElement('img');
+          img.src = url;
+          img.title = 'Click to download';
+          img.addEventListener('click', () => {
+            const a = document.createElement('a');
+            a.href = url; a.download = outName; a.click();
+          });
+          wrap.appendChild(img);
+          el.querySelector('.thumb-label').textContent = outName.length > 18 ? outName.slice(0,15)+'…' : outName;
+          const badge = el.querySelector('.badge');
+          badge.className = 'badge done';
+          badge.textContent = (size / 1024).toFixed(0) + ' KB';
+        },
+        setError(msg) {
+          el.querySelector('.thumb-img-wrap').innerHTML = `<span class="placeholder" style="padding:8px;text-align:center;">${msg}</span>`;
+          el.querySelector('.thumb-label').textContent = 'Error';
+          const badge = el.querySelector('.badge');
+          badge.className = 'badge error';
+          badge.textContent = 'failed';
+        }
+      };
+    }
+
+    dlBtn.addEventListener('click', async () => {
+      if (!results.length) return;
+      if (results.length === 1) {
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(results[0].blob);
+        a.download = results[0].name;
+        a.click(); return;
+      }
+      dlBtn.disabled = true;
+      dlBtn.textContent = 'Zipping…';
+      const zip = new JSZip();
+      results.forEach(r => zip.file(r.name, r.blob));
+      const content = await zip.generateAsync({ type: 'blob' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(content);
+      a.download = 'converted_images.zip';
+      a.click();
+      dlBtn.disabled = false;
+      dlBtn.textContent = 'Download all as ZIP';
+    });
+
+    clearBtn.addEventListener('click', () => {
+      results = [];
+      gallery.innerHTML = '';
+      actions.style.display = 'none';
+      progWrap.style.display = 'none';
+      statusBar.textContent = '';
+    });
+  </script>
+</body>
+</html>
